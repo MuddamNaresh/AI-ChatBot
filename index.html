@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraGen AI</title>
+    <!-- Modern Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">✨</span>
+                    <div>
+                        <h2>AuraGen AI</h2>
+                    </div>
+                </div>
+                <button class="btn-icon" id="btn-toggle-sidebar" title="Toggle Sidebar">☰</button>
+            </div>
+
+            <!-- New Chat Button -->
+            <div class="sidebar-action">
+                <button class="btn btn-primary btn-block" id="btn-new-chat">
+                    <span class="icon">＋</span> New Conversation
+                </button>
+            </div>
+
+            <!-- Mode Selector Switch -->
+            <div class="sidebar-section">
+                <label class="section-label">Operational Mode</label>
+                <div class="mode-toggle-group">
+                    <button class="mode-btn active" id="mode-rag" data-mode="rag">
+                        <span class="icon">📄</span> Document RAG
+                    </button>
+                    <button class="mode-btn" id="mode-general" data-mode="general">
+                        <span class="icon">💬</span> General AI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Knowledge Base / PDF Manager -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <label class="section-label">PDF Knowledge Base</label>
+                    <button class="btn-link" id="btn-load-sample" title="Load sample internship handbook">
+                        + Load Sample
+                    </button>
+                </div>
+                
+                <!-- Dropzone for PDFs -->
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;">
+                    <div class="dropzone-content">
+                        <span class="dropzone-icon">📥</span>
+                        <p class="dropzone-text"><strong>Click or Drop PDF</strong></p>
+                        <span class="dropzone-hint">Auto-extracts & vectorizes</span>
+                    </div>
+                    <div class="upload-progress" id="upload-progress" style="display: none;">
+                        <div class="spinner"></div>
+                        <span id="upload-status-text">Processing PDF...</span>
+                    </div>
+                </div>
+
+                <!-- Document List -->
+                <div class="document-list" id="document-list">
+                    <!-- Populated dynamically -->
+                    <div class="empty-state-sm">No PDF uploaded yet</div>
+                </div>
+            </div>
+
+            <!-- Chat History Sessions -->
+            <div class="sidebar-section sidebar-history">
+                <label class="section-label">Chat History</label>
+                <div class="session-list" id="session-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <span class="status-dot" id="api-status-dot"></span>
+                    <span class="status-label" id="api-status-text">Connecting...</span>
+                </div>
+                <button class="btn-icon" id="btn-open-settings" title="Settings & Gemini API Key">⚙️</button>
+            </div>
+        </aside>
+
+        <!-- ================= MAIN CHAT AREA ================= -->
+        <main class="chat-container">
+            <!-- Chat Topbar -->
+            <header class="chat-topbar">
+                <div class="topbar-left">
+                    <button class="btn-icon mobile-menu-btn" id="btn-mobile-menu">☰</button>
+                    <div class="session-title-wrapper">
+                        <h3 id="current-session-title">New Conversation</h3>
+                        <span class="badge" id="active-doc-badge">No Document Attached</span>
+                    </div>
+                </div>
+                <div class="topbar-right">
+                    <button class="btn btn-primary btn-sm" id="btn-ml-questions" title="Browse 13 Machine Learning Questions">
+                        📚 13 ML Questions
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btn-preview-rag" title="Inspect vector search scores">
+                        🔍 Vector Inspector
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btn-clear-chat" title="Clear current messages">
+                        🗑 Clear
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Messages Scroll Area -->
+            <div class="chat-messages" id="chat-messages">
+                <!-- Welcome Screen / Starter Prompts -->
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-icon">🎓</div>
+                    <h2>Welcome to AuraGen AI</h2>
+                    <p>A full-stack RAG Chatbot powered by <strong>Google Gemini</strong> and dense vector search.</p>
+                    
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <span class="feature-icon">⚡</span>
+                            <h4>Fast Gemini Intelligence</h4>
+                            <p>Sub-second response streaming with multi-turn conversation memory.</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">📚</span>
+                            <h4>PDF RAG Engine</h4>
+                            <p>Hierarchical chunking, cosine vector similarity, and accurate page citations.</p>
+                        </div>
+                        <div class="feature-card">
+                            <span class="feature-icon">💾</span>
+                            <h4>SQLite Persistence</h4>
+                            <p>All conversation threads and document indices are saved locally.</p>
+                        </div>
+                    </div>
+
+                    <div class="starters-section">
+                        <div class="section-title-row">
+                            <h4>🎯 13 Curated Machine Learning Questions (Click to Ask):</h4>
+                            <span class="badge active-doc">Ground Truth: Handbook PDF</span>
+                        </div>
+
+                        <!-- 13 ML Questions Grid -->
+                        <div class="ml-questions-container">
+                            <!-- Category 1: Fundamentals -->
+                            <div class="ml-category">
+                                <span class="category-tag">🧠 ML Fundamentals & Algorithms</span>
+                                <div class="starter-chips">
+                                    <button class="chip" data-prompt="What is the difference between Supervised and Unsupervised Learning with examples from the handbook?">
+                                        <span class="q-num">1</span> Supervised vs Unsupervised Learning
+                                    </button>
+                                    <button class="chip" data-prompt="What are the primary differences between Linear Regression and Logistic Regression in mathematical objective and output?">
+                                        <span class="q-num">2</span> Linear vs Logistic Regression
+                                    </button>
+                                    <button class="chip" data-prompt="Compare Bagging (e.g. Random Forest) and Boosting (e.g. XGBoost) in ensemble learning.">
+                                        <span class="q-num">3</span> Bagging vs Boosting (Random Forest vs XGBoost)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Category 2: Evaluation & Metrics -->
+                            <div class="ml-category">
+                                <span class="category-tag">📊 Evaluation Metrics & Validation</span>
+                                <div class="starter-chips">
+                                    <button class="chip" data-prompt="Why is Accuracy misleading on imbalanced datasets, and how do Precision, Recall, and F1-Score solve this?">
+                                        <span class="q-num">4</span> Imbalanced Data & Precision / Recall / F1
+                                    </button>
+                                    <button class="chip" data-prompt="What is the Confusion Matrix and how are True Positives, False Positives, and False Negatives defined?">
+                                        <span class="q-num">5</span> Confusion Matrix Breakdown (TP, FP, TN, FN)
+                                    </button>
+                                    <button class="chip" data-prompt="How does the ROC-AUC curve evaluate classification model discrimination across probability thresholds?">
+                                        <span class="q-num">6</span> ROC-AUC Curves & Probability Thresholds
+                                    </button>
+                                    <button class="chip" data-prompt="What is K-Fold Cross-Validation and why is it essential for unbiased model validation?">
+                                        <span class="q-num">7</span> K-Fold Cross-Validation & Stratification
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Category 3: Optimization & Preprocessing -->
+                            <div class="ml-category">
+                                <span class="category-tag">⚙️ Optimization, Preprocessing & Clustering</span>
+                                <div class="starter-chips">
+                                    <button class="chip" data-prompt="Explain the Bias-Variance Tradeoff and how L1 (Lasso) vs L2 (Ridge) Regularization prevents overfitting.">
+                                        <span class="q-num">8</span> Bias-Variance Tradeoff & L1 vs L2 Regularization
+                                    </button>
+                                    <button class="chip" data-prompt="What are the standard strategies for Missing Value Imputation and Feature Scaling (Standardization vs Normalization)?">
+                                        <span class="q-num">9</span> Data Preprocessing, Imputation & Scaling
+                                    </button>
+                                    <button class="chip" data-prompt="How does K-Means clustering work, and how do you determine the optimal K using the Elbow Method and Silhouette Score?">
+                                        <span class="q-num">10</span> K-Means Clustering & Elbow Method
+                                    </button>
+                                    <button class="chip" data-prompt="What is Principal Component Analysis (PCA) and how does it reduce dimensionality while preserving variance?">
+                                        <span class="q-num">11</span> Principal Component Analysis (PCA)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Category 4: GenAI & RAG -->
+                            <div class="ml-category">
+                                <span class="category-tag">⚡ Generative AI & RAG Architecture</span>
+                                <div class="starter-chips">
+                                    <button class="chip" data-prompt="Explain the 4 stages of a Retrieval-Augmented Generation (RAG) pipeline described in the handbook.">
+                                        <span class="q-num">12</span> 4 Stages of the RAG Pipeline
+                                    </button>
+                                    <button class="chip" data-prompt="How do Cosine Similarity and Dense Vector Embeddings function in semantic information retrieval?">
+                                        <span class="q-num">13</span> Cosine Similarity & Vector Embeddings
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <footer class="chat-input-area">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="user-input" 
+                        placeholder="Ask a question about your PDF or chat with Gemini... (Press Enter to send, Shift+Enter for newline)"
+                        rows="1"
+                    ></textarea>
+                    <button id="btn-send" class="btn-send" title="Send Message">
+                        <span class="send-icon">➤</span>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="mode-indicator" id="mode-indicator">Mode: Document RAG</span>
+                    <span class="keyboard-hint">Press Enter to send • Powered by Google GenAI</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- ================= SETTINGS MODAL ================= -->
+    <div class="modal-backdrop" id="settings-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Settings & API Configuration</h3>
+                <button class="btn-icon" id="btn-close-settings">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- API Key Section -->
+                <div class="form-group">
+                    <label for="setting-api-key">Google Gemini API Key</label>
+                    <div class="input-group">
+                        <input type="password" id="setting-api-key" placeholder="Enter your AI Studio API key (AIzaSy...)">
+                        <button class="btn btn-secondary" id="btn-toggle-key-visibility">👁</button>
+                    </div>
+                    <small class="form-hint">
+                        Get your free Gemini API key from 
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+                    </small>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-secondary btn-sm" id="btn-verify-key">Verify Connection</button>
+                    <span class="verify-status" id="verify-status"></span>
+                </div>
+
+                <hr class="divider">
+
+                <!-- Model Choice -->
+                <div class="form-group">
+                    <label for="setting-model">Gemini Model</label>
+                    <select id="setting-model" class="form-select">
+                        <option value="gemini-3.5-flash-lite" selected>gemini-3.5-flash-lite (Recommended: Ultra-fast & Responsive)</option>
+                        <option value="gemini-3.8-flash">gemini-3.8-flash (Balanced Reasoning)</option>
+                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Deep Reasoning)</option>
+                    </select>
+                </div>
+
+                <!-- Temperature -->
+                <div class="form-group">
+                    <div class="label-with-val">
+                        <label for="setting-temperature">Temperature (Creativity)</label>
+                        <span id="temp-val">0.7</span>
+                    </div>
+                    <input type="range" id="setting-temperature" min="0.0" max="1.0" step="0.05" value="0.7">
+                </div>
+
+                <!-- Top-K Retrieval -->
+                <div class="form-group">
+                    <div class="label-with-val">
+                        <label for="setting-top-k">RAG Retrieved Chunks (Top-K)</label>
+                        <span id="top-k-val">4</span>
+                    </div>
+                    <input type="range" id="setting-top-k" min="1" max="10" step="1" value="4">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-settings">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-settings">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= RAG VECTOR INSPECTOR MODAL ================= -->
+    <div class="modal-backdrop" id="inspector-modal" style="display: none;">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>🔍 Vector Retrieval Inspector</h3>
+                <button class="btn-icon" id="btn-close-inspector">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    Test your RAG search engine: input a test query to see the exact chunks,
+                    page citations, and cosine similarity scores returned by the vector index.
+                </p>
+                <div class="input-group">
+                    <input type="text" id="inspector-query" placeholder="Type a test query (e.g. 'What is F1 score?')...">
+                    <button class="btn btn-primary" id="btn-run-inspect">Search Index</button>
+                </div>
+                <div class="inspector-results" id="inspector-results">
+                    <div class="empty-state-sm">Enter a query above to inspect retrieved chunks.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 13 ML QUESTIONS MODAL ================= -->
+    <div class="modal-backdrop" id="ml-modal" style="display: none;">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h3>📚 13 Core Machine Learning Questions</h3>
+                <button class="btn-icon" id="btn-close-ml-modal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    Select any question below to immediately ask your RAG chatbot. The answers are grounded in your indexed
+                    <strong>Data Science Internship Handbook PDF</strong> with exact page citations and similarity scores.
+                </p>
+                <div class="ml-modal-grid">
+                    <button class="ml-modal-btn" data-prompt="What is the difference between Supervised and Unsupervised Learning with examples from the handbook?">
+                        <strong>#1 Supervised vs Unsupervised</strong>
+                        <span>Algorithms, mapping inputs to labels vs latent structures</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="What are the primary differences between Linear Regression and Logistic Regression in mathematical objective and output?">
+                        <strong>#2 Linear vs Logistic Regression</strong>
+                        <span>Continuous prediction vs Sigmoid probability classification</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="Compare Bagging (e.g. Random Forest) and Boosting (e.g. XGBoost) in ensemble learning.">
+                        <strong>#3 Bagging vs Boosting</strong>
+                        <span>Variance reduction (Parallel) vs Bias reduction (Sequential)</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="Why is Accuracy misleading on imbalanced datasets, and how do Precision, Recall, and F1-Score solve this?">
+                        <strong>#4 Imbalanced Data Metrics</strong>
+                        <span>Why 99.9% accuracy can fail, and how Precision / Recall / F1 fix it</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="What is the Confusion Matrix and how are True Positives, False Positives, and False Negatives defined?">
+                        <strong>#5 Confusion Matrix Anatomy</strong>
+                        <span>TP, FP, TN, FN breakdown and error cost analysis</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="How does the ROC-AUC curve evaluate classification model discrimination across probability thresholds?">
+                        <strong>#6 ROC-AUC Curve Analysis</strong>
+                        <span>Sensitivity vs 1-Specificity, threshold invariance</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="What is K-Fold Cross-Validation and why is it essential for unbiased model validation?">
+                        <strong>#7 K-Fold Cross-Validation</strong>
+                        <span>K-partitioning, Stratified K-Fold for imbalanced labels</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="Explain the Bias-Variance Tradeoff and how L1 (Lasso) vs L2 (Ridge) Regularization prevents overfitting.">
+                        <strong>#8 Bias-Variance & Regularization</strong>
+                        <span>Underfitting vs Overfitting, L1 sparsity vs L2 weight decay</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="What are the standard strategies for Missing Value Imputation and Feature Scaling (Standardization vs Normalization)?">
+                        <strong>#9 Data Preprocessing & Scaling</strong>
+                        <span>Median/Mode imputation, Z-score scaling vs MinMax</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="How does K-Means clustering work, and how do you determine the optimal K using the Elbow Method and Silhouette Score?">
+                        <strong>#10 K-Means & Finding Optimal K</strong>
+                        <span>Euclidean centroid iterative updates, WCSS Elbow & Silhouette</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="What is Principal Component Analysis (PCA) and how does it reduce dimensionality while preserving variance?">
+                        <strong>#11 Principal Component Analysis (PCA)</strong>
+                        <span>Covariance matrix, Eigenvectors, variance preservation</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="Explain the 4 stages of a Retrieval-Augmented Generation (RAG) pipeline described in the handbook.">
+                        <strong>#12 The 4 Stages of RAG</strong>
+                        <span>Ingestion, Recursive Chunking, Vector Embeddings & Cosine Retrieval</span>
+                    </button>
+                    <button class="ml-modal-btn" data-prompt="How do Cosine Similarity and Dense Vector Embeddings function in semantic information retrieval?">
+                        <strong>#13 Cosine Similarity & Vectors</strong>
+                        <span>Vector dot product over norms, high-dimensional semantic match</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
